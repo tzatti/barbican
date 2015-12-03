@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
+"""
 # Symantec, GeoTrust and Thawte API Library
 # This library has been written by Tobias Zatti
 # Contact: tobias_zatti@symantec.com
@@ -9,23 +9,20 @@
 #
 # Requirements:
 # suds module ( https://fedorahosted.org/suds/ )
-#
-#################################################
+""" 
 # System check to only support python 2.7
 import sys
 if sys.version_info[:2] > (2,7):
     print "This library only works with Python 2.7."
     exit()
+import logging
 from suds.client import Client
 from suds.transport.http import HttpTransport
 import urllib2, urllib, httplib, socket
 import ssl
-#httplib.HTTPConnection.debuglevel = 5
-
 # Error Codes:
 # 1000 - No credentials set
-
-#################################################
+"""
 # Class SymAPI
 #
 # @version   1.3
@@ -57,7 +54,7 @@ import ssl
 #
 # v1.0
 # Initial version 
- ################################################
+"""
 
 class SymAPI:
     # URL to WSDL-file for test environment order-API
@@ -74,25 +71,25 @@ class SymAPI:
         return '1.3'
 
     def __str__(self):
-        return "Symantec SSL API v%s" % self.__version() + "\nPython library by Tobias Zatti\nSupport: tobias_zatti@symantec.com"
+        return "Symantec SSL API v{}".format(self.__version()) + "\nPython library by Tobias Zatti\nSupport: tobias_zatti@symantec.com"
         
         
 
     # Initializes the object and/or resets all values to default	
     def __init__ (self, partnerCode= '', username = '', password = '', 
-        verbose = True, useTestAPI = True, proxy = None):
+                  verbose = True, useTestAPI = True, proxy = None):
         # When enabled, this prints status and debug messages
         self.verbose = verbose
         if self.verbose:
             self.__enableLogging()
 
-        s = "Symantec SSL API v%s" % self.__version()
+        s = "Symantec SSL API v{}".format(self.__version())
         star = "*" * len(s)
-        self.log (star)
-        self.log(s)
-        self.log (star)
-        self.log("To turn off logging, set verbose = False")
-       # Your Symantec Partner Code
+        logging.info(star)
+        logging.info(s)
+        logging.info(star)
+        logging.info("To turn off logging, set verbose = False")
+        # Your Symantec Partner Code
         self.partnerCode = partnerCode
         # Your API username
         self.username = username
@@ -118,7 +115,6 @@ class SymAPI:
         self.ApiVersion = version
 
     def __enableLogging(self):
-        import logging
         logging.basicConfig(level=logging.INFO)
         logging.getLogger('suds.client').setLevel(logging.DEBUG)
         logging.getLogger('suds.transport').setLevel(logging.DEBUG)
@@ -132,17 +128,17 @@ class SymAPI:
         self.partnerCode = partnercode
         self.username = username
         self.userpassword = userpass
-        self.log("Credentials have been saved.")
+        logging.info("Credentials have been saved.")
 
     def setProxy(self, proxy_server, proxy_port):
-        self.proxy = '%s:%s' % (proxy_server, proxy_port)
-        self.log("Set proxy \"%s\"" % self.proxy)
+        self.proxy = '{}:{}'.format(proxy_server, proxy_port)
+        logging.info("Set proxy \"{}\"".format(self.proxy))
 
     def __credentialsSet(self):
         """Checks if credentials have been entered
         """
         if (self.partnerCode == '' and self.username == '' and self.userpassword == ''):
-            self.log("No credentials have been set. Please use \"setCredentials(partnercode, username, password)\".", type = 'err')
+            logging.info("No credentials have been set. Please use \"setCredentials(partnercode, username, password)\".", type = 'err')
             return False
         else:
             return True
@@ -163,7 +159,7 @@ class SymAPI:
             else:
                 return self.url_queryAPI
         else:
-            raise ValueError("Parameter \"type\" should be either \"order\", \"Validate\" or \"query\"")
+            raise ValueError('Parameter "type" should be either "order", "Validate" or "query"')
 
     def __createRequestHeader (self, type, replayToken = None):
         """Creates the RequestHeader needed for queries and orders
@@ -204,10 +200,10 @@ class SymAPI:
 
     def __setClient(self, type):
         if self.proxy == None:
-            self.log("Connecting directly..")
+            logging.info("Connecting directly..")
             self.client = Client(self.__getAPIURL(type))
         else:
-            self.log("Connecting using proxy \"%s\"" % self.proxy)
+            logging.info("Connecting using proxy \"{}\"".format(self.proxy))
             opener = urllib2.build_opener(ConnectHTTPHandler(proxy=self.proxy), ConnectHTTPSHandler(proxy=self.proxy))
             urllib2.install_opener(opener)
             t = HttpTransport()
@@ -222,10 +218,10 @@ class SymAPI:
         """
         if self.useTestAPI:
             self.url_orderAPI_demo = url
-            self.log("Changed DEMO URL for order API to:", url)
+            logging.info("Changed DEMO URL for order API to:", url)
         else:
             self.url_orderAPI = url
-            self.log("Changed PRODUCTION URL for order API to:", url)
+            logging.info("Changed PRODUCTION URL for order API to:", url)
 
     def setQueryAPIURL(self, url):
         """
@@ -233,10 +229,10 @@ class SymAPI:
         """
         if self.useTestAPI:
             self.url_orderAPI_demo = url
-            self.log("Changed DEMO URL for query API to:", url)
+            logging.info("Changed DEMO URL for query API to:", url)
         else:
             self.url_orderAPI = url
-            self.log("Changed PRODUCTION URL for query API to:", url)
+            logging.info("Changed PRODUCTION URL for query API to:", url)
 
     def log (self, string, force = False, type = "msg"):
         """Prints the given string with time stamp for debugging reasons.
@@ -244,8 +240,9 @@ class SymAPI:
         """
         if self.verbose or force:
             if type == "err":
-                print "ERROR: ",
-            print string
+                logging.info("ERROR: " + string)
+            else:
+                logging.info(string)
     
     """	
     ** HELPER FUNCTIONS **
@@ -254,9 +251,10 @@ class SymAPI:
     * have to care about syntax.
     """
 
-    def createContact(self, firstName, lastName, phone, email, countryCode = None, region = None, 
-        postalCode = None, city = None, addressLine1 = None, addressLine2 = None, fax = None,
-        title = None, organizationName = None):
+    def createContact(self, firstName, lastName, phone, email, countryCode = None, 
+                      region = None, postalCode = None, city = None, 
+                      addressLine1 = None, addressLine2 = None, fax = None,
+                      title = None, organizationName = None):
         """Creates an object with the correct key names as they are required by the SOAP API.
         * You can use this function for Admin-, Billing- and Tech Contact.
         *
@@ -300,13 +298,14 @@ class SymAPI:
         c.Region = region
         c.PostalCode = postalCode
         c.Country = countryCode
-        s = "Created contact: \"%s %s\"" % (firstName, lastName)
-        self.log(s)
+        s = "Created contact: \"{} {}\"".format(firstName, lastName)
+        logging.info(s)
         return c
 
-    def createOrganizationInfo (self, orgName = None, countryCode = None, region = None, city = None,
-        addressLine1 = None, addressLine2 = None, addressLine3 = None, postalCode = None,
-        phone = None, fax = None):
+    def createOrganizationInfo (self, orgName = None, countryCode = None, region = None, 
+                                city = None, addressLine1 = None, addressLine2 = None, 
+                                addressLine3 = None, postalCode = None, phone = None, 
+                                fax = None):
         """Creates an array with the correct key names as they are required by the SOAP API.
         * You can use this function for an Organization Address.
         *
@@ -350,13 +349,9 @@ class SymAPI:
     * All functions return an array with the result parameters
     * PLEASE NOTE THAT ALL PARAMETER NAMES ARE CASE-SENSITIVE!
     """
-###############################################################################
-#                                                                             #
-#                                                                             #
-#                           QUERY API FUNCTIONS                               # 
-#                                                                             #
-#                                                                             #
-###############################################################################
+"""
+            QUERY API FUNCTIONS                                                                           #
+"""
 
     def hello(self, string):
         """Returns the "Input" parameter as "helloResult" parameter.
@@ -397,19 +392,18 @@ class SymAPI:
         * ReturnFileAuthDVSummary : bool
         * ReturnDNSAuthDVSummary : bool
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetOrderByPartnerOrderID", replayToken)
         r.PartnerOrderID = partnerOrderID
 
         for (k,v) in options.items():
             if k in r.OrderQueryOptions:
-                self.log("  - %s -> %s" % (k,v))
                 r.OrderQueryOptions[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetOrderByPartnerOrderID(r)
 
     def CheckStatus(self, partnerOrderID, replayToken = None):
@@ -420,11 +414,11 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "CheckStatus", replayToken)
         r.PartnerOrderID = partnerOrderID
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.CheckStatus(r)	
 	
     def GetFulfillment(self, partnerOrderID, replayToken = None, options = {}):
@@ -435,20 +429,20 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetFulfillment", replayToken)
         r.PartnerOrderID = partnerOrderID
         if 'ReturnCACerts' in options.keys():
-            self.log("ReturnCACerts --> %s" % options['ReturnCACerts'])
+            logging.info("ReturnCACerts --> {}".format(options['ReturnCACerts']))
             r.ReturnCACerts = options['ReturnCACerts']
         if 'ReturnPKCS7Cert' in options.keys():
-            self.log("ReturnPKCS7Cert --> %s" % options['ReturnPKCS7Cert'])
+            logging.info("ReturnPKCS7Cert --> {}".format(options['ReturnPKCS7Cert']))
             r.ReturnPKCS7Cert = options['ReturnPKCS7Cert']
         if 'ReturnIconScript' in options.keys():
-            self.log("ReturnIconScript --> %s" % options['ReturnIconScript'])
+            logging.info("ReturnIconScript --> {}".format(options['ReturnIconScript']))
             r.ReturnIconScript = options['ReturnIconScript']
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetFulfillment(r)   
 	
     def GetModifiedOrders(self, fromDate, toDate, replayToken = None, options = {}):
@@ -464,20 +458,20 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetModifiedOrders", replayToken)
         r.FromDate = fromDate
         r.ToDate = toDate
 
         for (k,v) in options.items():
             if k in r.OrderQueryOptions:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format((k,v)))
                 r.OrderQueryOptions[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetModifiedOrders(r)
 
     def GetModifiedOrderSummary(self, fromDate, toDate, replayToken = None):
@@ -494,24 +488,24 @@ class SymAPI:
         * so that order status can be kept up to date in a partner’s system. If no orders have
         * changed status, a return count of zero is returned.
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetModifiedOrderSummary", replayToken)
         r.FromDate = fromDate
         r.ToDate = toDate
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetModifiedOrderSummary(r)
 
     def GetModifiedPreAuthOrderSummary(self, fromDate, toDate, replayToken = None):
         """ Same as GetModifiedOrderSummary, but for PreAuth orders. """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetModifiedPreAuthOrderSummary", replayToken)
         r.FromDate = fromDate
         r.ToDate = toDate
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetModifiedPreAuthOrderSummary(r)
 
     def GetQuickApproverList(self, domain, replayToken = None, productCode = None):
@@ -523,13 +517,13 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetQuickApproverList", replayToken)
         r.Domain = domain
         r.IncludeUserAgreement.UserAgreementProductCode = productCode
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetQuickApproverList(r)
 
     def GetOrdersByDateRange(self, fromDate, toDate, replayToken = None, options = {}):
@@ -545,20 +539,20 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetOrdersByDateRange", replayToken)
         r.FromDate = fromDate
         r.ToDate = toDate
 
         for (k,v) in options.items():
             if k in r.OrderQueryOptions:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderQueryOptions[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetOrdersByDateRange(r)
 
     def GetUserAgreement(self, productCode, replayToken = None, agreementType = "ORDERING"):
@@ -571,13 +565,13 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetUserAgreement", replayToken)
         r.UserAgreementProductCode = productCode
         r.AgreementType = agreementType
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetUserAgreement(r)
 
     def ParseCSR(self, csr, replayToken = None):
@@ -587,12 +581,12 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "ParseCSR", replayToken)
         r.CSR = csr
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.ParseCSR(r)     
 
     def GetPreAuthOrdersByDateRange(self, fromDate, toDate, organizationInfo=None, replayToken=None):
@@ -603,7 +597,7 @@ class SymAPI:
         * @param array - All elements are optional but need to be from the following
         * set of elements: {OrganizationName, City, Region, Country}
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = None
         if self.__credentialsSet():
             self.__setClient("query")
@@ -616,8 +610,8 @@ class SymAPI:
         r.QueryParameters.ToDate = toDate
         r.QueryParameters.OrganizationInfo = organizationInfo
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetPreAuthOrdersByDateRange(r)
 
     def GetPreAuthOrderByPartnerOrderID(self, partnerOrderID, replayToken = None):
@@ -626,25 +620,22 @@ class SymAPI:
         * **Required Parameters**
         * PartnerOrderID : string
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("query", "GetPreAuthOrderByPartnerOrderID", replayToken)
         r.PartnerOrderID = partnerOrderID
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.GetPreAuthOrderByPartnerOrderID(r)
 
            
 
-###############################################################################
-#                                                                             #
-#                                                                             #
-#                           ORDER API FUNCTIONS                               #
-#                                                                             #
-#                                                                             #	
-###############################################################################
-    def QuickOrder(self, productCode, approverEmail = None, replayToken = None, organizationInfo = None, contacts = {'admin':None, 'tech':None, 'billing':None},
-        options = {}, partnerOrderID = None):
+"""
+            ORDER API FUNCTIONS                                                                           #
+"""
+    def QuickOrder(self, productCode, approverEmail = None, replayToken = None, 
+                   organizationInfo = None, contacts = {'admin':None, 'tech':None, 'billing':None},
+                   options = {}, partnerOrderID = None):
         """The QuickOrder command allows partners to perform all the actions that requestors would 
         * typically perform using our Web forms to place an order with one API operation call. 
         * This includes submitting the full order information, such as technical contact, 
@@ -664,7 +655,7 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "QuickOrder", replayToken)
 
         # Order specific
@@ -684,17 +675,18 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.OrderParameters:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderParameters[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.QuickOrder(r)
 
-    def QuickInvite(self, productCode, requestorEmail = None, replayToken = None, organizationInfo = None, contacts = {'admin':None, 'tech':None, 'billing':None},
-        options = {}, partnerOrderID = None):
+    def QuickInvite(self, productCode, requestorEmail = None, replayToken = None, 
+                    organizationInfo = None, contacts = {'admin':None, 'tech':None, 'billing':None},
+                    options = {}, partnerOrderID = None):
         """QuickInvite is a mechanism that allows partners to invite a third party to complete an order. With QuickInvite, partners can pre-fill a subset of order data. Upon receiving a submission, our system sends an email to the requestor inviting the requestor to complete the order. The information provided by the partner is protected and cannot be edited by the requestor. From this point, the order process proceeds in the same manner as a typical Domain Vetted, Organization Vetted, or Domain and Organization Vetted order. Section 5.3.1 contains a complete profile of the fields used in the QuickInvite command for all product categories.
         *
         * @param array - OrderParameters: ValidityPeriod, CSR, WebServerType
@@ -708,7 +700,7 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "QuickInvite", replayToken)
 
         # Order specific
@@ -725,23 +717,24 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.OrderParameters:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderParameters[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.QuickInvite(r)
 
-    def OrderPreAuthentication(self, productCode, replayToken = None, organizationInfo = None, domainInfo = None, contactPairs = [],
-        options = {}, partnerOrderID = None, billingContact=None):
+    def OrderPreAuthentication(self, productCode, replayToken = None, 
+                               organizationInfo = None, domainInfo = None, contactPairs = [],
+                               options = {}, partnerOrderID = None, billingContact=None):
         """
         The OrderPreAuthentication operation allows the submission of Symantec Ready
         Issuance orders. It requires an organization and optionally a domain name and
         contact pair.
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         # The input object for OrderPreAuthentication has inconsistent
         # naming and is called "AuthOrderInput". Hence we need to
         # send "AuthOrder" as service name to __prepareClient().
@@ -760,16 +753,17 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.OrderParameters:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderParameters[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.OrderPreAuthentication(r)
 
-    def Reissue(self, partnerOrderID, reissueEmail, options = {}, replayToken = None, productCode = None, orderChanges = None):
+    def Reissue(self, partnerOrderID, reissueEmail, options = {}, 
+                replayToken = None, productCode = None, orderChanges = None):
         """The Reissue operation allows partners to initiate the reissue of an order so that customers 
         * do not need to visit the GeoTrust website to initiate a reissue. Partners are expected to 
         * properly validate the authority of customers to initiate certificate reissues prior to using 
@@ -781,7 +775,7 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "Reissue", replayToken)
 
         r.OrderRequestHeader.PartnerOrderID = partnerOrderID
@@ -792,17 +786,17 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.OrderParameters:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderParameters[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.Reissue(r)
 
     def ModifyOrder(self, partnerOrderID, orderOperation, operationReasonMessage = None, 
-        requestorEmail = None, options = {}, replayToken = None):
+                    requestorEmail = None, options = {}, replayToken = None):
         """Lets you modify your order. This function only works in the test environment
         * and is to help you simulate a fully processed order.
         * 
@@ -815,7 +809,7 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "ModifyOrder", replayToken)
 
         r.OrderRequestHeader.PartnerOrderID = partnerOrderID
@@ -826,16 +820,17 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.OperationData:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OperationData[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
         
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.ModifyOrder(r)        
     
-    def ChangeApproverEmail(self, partnerOrderID, approverEmail, replayToken = None, options = {}):
+    def ChangeApproverEmail(self, partnerOrderID, approverEmail, replayToken = None, 
+                            options = {}):
         """The ChangeApproverEmail operation allows partners to change the domain approver email for orders where the domain approval 
         * process has not been completed. This operation applies to all GeoTrust and Thawte domain validated and organization and domain 
         * validated certificates.
@@ -844,13 +839,13 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "ChangeApproverEmail", replayToken)
         r.OrderRequestHeader.PartnerOrderID = partnerOrderID
         r.ApproverEmail = approverEmail
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.ChangeApproverEmail(r)                
 
     def ValidateOrderParameters(self, productCode, options = {}, replayToken = None):
@@ -866,7 +861,7 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "ValidateOrderParameters", replayToken)
 
         r.OrderRequestHeader.ProductCode = productCode
@@ -876,16 +871,17 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.OrderParameters:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderParameters[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.ValidateOrderParameters(r)         
 
-    def ResendEmail(self, productCode, partnerOrderID, resendMailType, options = {}, replayToken = None):
+    def ResendEmail(self, productCode, partnerOrderID, resendMailType, 
+                    options = {}, replayToken = None):
         """The ResendEmail operation allows partners to resend various email messages sent by GeoTrust 
         * in the course of processing orders. Certain email types may not apply for a particular order.
         *
@@ -896,15 +892,15 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "ResendEmail", replayToken)
 
         r.OrderRequestHeader.ProductCode = productCode
         r.OrderRequestHeader.PartnerOrderID = partnerOrderID
         r.ResendEmailType = resendMailType
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.ResendEmail(r)   
 
     def Revoke(self, certificate, revokeReason, options = {}, replayToken = None):
@@ -927,7 +923,7 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         r = self.__prepareClient("order", "Revoke", replayToken)
 
         r.Certificate = certificate
@@ -935,8 +931,8 @@ class SymAPI:
         if 'SerialNumber' in options.keys():
             r.SerialNumber = options['SerialNumber']
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.Revoke(r) 
 	
     def ShowReplayTokens(self, partnerCode):
@@ -944,17 +940,19 @@ class SymAPI:
         * @return array of strings
         * @access public
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         from suds.client import Client
         self.__setClient("order")
 
         return self.client.service.ShowReplayTokens(partnerCode)
 
-    def ValidatePreAuthenticationData(self, productCode, partnerOrderID=None, organizationInfo=None, domainInfo=None, options = {}, replayToken = None, contactPairs = []):
+    def ValidatePreAuthenticationData(self, productCode, partnerOrderID=None, 
+                                      organizationInfo=None, domainInfo=None, 
+                                      options = {}, replayToken = None, contactPairs = []):
         """Validates the given authentication data to check whether the given
         data is eligible for Pre-Authentication.
         """
-        self.log("Generating request..")
+        logging.info("Generating request..")
         # Due to a naming inconsistency, the ValidatePreAuthenticationData input object
         # is called ValidateAuthDataInput, hence we need to send the operation name
         # "ValidateAuthData" to the __prepareClient() operation.
@@ -970,18 +968,16 @@ class SymAPI:
         # Optional Parameters
         for (k,v) in options.items():
             if k in r.AuthData:
-                self.log("  - %s -> %s" % (k,v))
+                logging.info("  - {} -> {}".format(k,v))
                 r.OrderParameters[k] = v
             else:
-                self.log("  - %s is not a valid parameter" % k)
+                logging.info("  - {} is not a valid parameter".format(k))
 
-        self.log(r)
-        self.log("Connecting to API..")
+        logging.info(r)
+        logging.info("Connecting to API..")
         return self.client.service.ValidatePreAuthenticationData(r)         
 
-####################################
-# Proxy Addon
-####################################
+"""
 # CenturyLink Technology Solutions
 # Author: Lindsay Weir
 # Date: 09/23/2014
@@ -993,6 +989,7 @@ class SymAPI:
 #
 # urllib2 opener to connection through a proxy using the CONNECT method, (useful for SSL)
 # tested with python 2.4
+"""
 class ProxyHTTPConnection(httplib.HTTPConnection):
 
     _ports = {'http' : 80, 'https' : 443}
@@ -1055,8 +1052,8 @@ class ProxyHTTPSConnection(ProxyHTTPConnection):
 
     default_port = 443
 
-    def __init__(self, host, port = None, key_file = None, cert_file = None, strict = None,
-        timeout=30):
+    def __init__(self, host, port = None, key_file = None, cert_file = None, 
+                 strict = None, timeout=30):
         print host, port
         ProxyHTTPConnection.__init__(self, host, port)
         self.key_file = key_file
@@ -1094,206 +1091,3 @@ class ConnectHTTPSHandler(urllib2.HTTPSHandler):
         if self.proxy is not None:
             req.set_proxy(self.proxy, 'https')
         return urllib2.HTTPSHandler.do_open(self, ProxyHTTPSConnection, req)
-
-###############################################################################
-#                                                                             #
-#                                                                             #
-#                           EXAMPLE CODE                                      #
-#                                                                             #
-#                                                                             # 
-###############################################################################
-if __name__ == "__main__":
-    api = SymAPI()
-    api.setCredentials("4600590NOT94031", "librarytest", '1libraryTest$')
-    #api.setCredentials("bugbash", "bugbash", "Password@123")
-    #api.client = Client(api.getAPIURL("query"))
-    #print api.client
-    #print api.GetOrderByPartnerOrderID("26_SAN_test", options = {'ReturnFulfillment':True})
-
-
-    #api.setProxy("dc3itproxy01.sky.savvis.net","8080")
-    admin = api.createContact("AdminFirst", "AdminLast", "+49-123-45678", "tobias_zatti@symantec.com", title="ITS3DS", 
-        city="Stuttgart", addressLine1="Another Street 54", organizationName="My Company AG", region="BadenWuerttemberg", 
-        postalCode="70123", countryCode="DE")
-    tech = api.createContact("TechFirst", "TechLast", "+49-123-45678", "tobias_zatti@symantec.com", title="Produktion", 
-        city="Stuttgart", addressLine1="A street 4", organizationName="My Company AG", region="Baden-Wuerttemberg", 
-        postalCode="70123", countryCode="DE")
-    admin2 = api.createContact("AdminFifrst", "AdminLast", "+49-123-456378", "tobias_zatti@symantec.com", title="ITS3DS", 
-        city="Stuttgart", addressLine1="Another Street 54", organizationName="My Company AG", region="BadenWuerttemberg", 
-        postalCode="70123", countryCode="DE")
-    tech2 = api.createContact("TechFirst", "TechLast", "+49-123-45678", "tobias_zatti@symantec.com", title="Produktion", 
-        city="Stuttgart", addressLine1="A street 4", organizationName="My Company AG", region="Baden-Wuerttemberg", 
-        postalCode="70123", countryCode="DE")
-    billing = api.createContact("BillingFirst", "BillingLast", "+49-123-45678", "tobias_zatti@symantec.com", title="SSL account manager", city="Berlin", addressLine1="Test Ave 1", organizationName="my Company GmbH", region="Berlin", postalCode="13961", countryCode="DE")
-
-    orginfo = api.createOrganizationInfo("My Company AG", countryCode = 'DE', region = 'BadenWuerttemberg', 
-         city = 'Stuttgart', addressLine1 = 'A street 20', postalCode = '70648', phone = '+49-123-45678', fax = '+49-123-123432')
-
-
-    cp = [{"AdminContact":admin,"TechContact":tech,"ContactType":"PRIMARY"},{"AdminContact":admin2,"TechContact":tech2,"ContactType":"NON-PRIMARY"}]
-    domains = [{"Domain":{"Name":"test.com"}}]
-    res = api.ValidatePreAuthenticationData("PreAuthOV", organizationInfo=orginfo, domainInfo=domains, contactPairs=cp, options={"ValidityPeriod":24})
-    #res = api.OrderPreAuthentication("PreAuthOV", organizationInfo=orginfo, domainInfo=domains, billingContact=billing, contactPairs=cp, options={"ValidityPeriod":24})
-    print res
-
-
-    
-    #res = api.GetOrderByPartnerOrderID("pkcs7bug1", options={"ReturnFulfillment":True, "ReturnPKCS7Cert":True})
-    #res = api.GetFulfillment("pkcs7bug1", options={"ReturnPKCS7Cert":True})
-    #print res
-    #exit()
-    exit()
-    api.GetPreAuthOrdersByDateRange("2015-01-01T00:00:00", "2016-01-01T00:00:00", organizationInfo={"OrganizationName":"Test", "Country":"DE"})
-    csr = """
-    -----BEGIN CERTIFICATE REQUEST-----
-MIICsTCCAZkCADBtMQswCQYDVQQGEwJERTEWMBQGA1UEAxMNemRsb2dpc3Rpay5k
-ZTESMBAGA1UEBxMJU3R1dHRnYXJ0MRIwEAYDVQQKEwlJcmdlbmR3YXMxCzAJBgNV
-BAgTAkJXMREwDwYDVQQLEwhJcmVuZHdhczCCASIwDQYJKoZIhvcNAQEBBQADggEP
-ADCCAQoCggEBAMDcxVong7q9yo41/T0Kqu4ovZ/kNIWFv9R7SLm0L0ic+bpr0b1y
-b//rjlFH+SUXQgTQm5geHTeTp8QVlW+NlqH0TeJDTeuJob7uiIrec+O8sQLXRDhB
-7YtMam20Muh33UaYHv+kKehZMpmNc95tCZvS94meztwjKb0lIuzzsX4s59HWjmLl
-eUlQBzryQSha/hz3kKpA+iw1hApAyYeHlvjZyS6ycxmgIeK4fxR75w4ivPhUQBUw
-p6im1mSj9vfomX8vW+5pAtMjVaQsMyGdHEF6v8mXEPc7I5IGFtQg6aPv/PKe2fgK
-UBEeOuRPw7nbvI1q8qjHM9/uOXOnZwfZ5d0CAwEAAaAAMA0GCSqGSIb3DQEBCwUA
-A4IBAQCgun450V2J21NijQIdpyB07flX10KgL33lsVl+CrvRBBnIV7HLFm8bQNHu
-8JPVeX5PQqOvdNFH+3B4ANI+6Y126H4OGsisUclcNIRCt3napgGMoLMEL1xwz7j8
-4mztZ3gFvJt+0b3aRDF5Q7KxalysPLJpAlzrZPvxMhju5OHxH/SfHeEldBwJBPZs
-qYyqYiwwYzSFiCXsENcrH2jHHqVqfzh/yFJGG1DmQ0hMPoQO8/PK/aX4NzDq/GmQ
-cSd4i/dvARlZExwqZ2rr2YnbeTS9LLTuxYxcVjrz46gaBNLAnEfo7+3oE+BdD/r6
-4ES75c9oWbz/JavJn2dbN0253iW8
------END CERTIFICATE REQUEST-----"""
-    admin = api.createContact("AdminFirst", "AdminLast", "+49-123-45678", "tobias_zatti@symantec.com", title="ITS3DS", city="Stuttgart", addressLine1="Another Street 54", organizationName="My Company AG", region="BadenWuerttemberg", postalCode="70123", countryCode="DE")
-    tech = api.createContact("TechFirst", "TechLast", "+49-123-45678", "tobias_zatti@symantec.com", title="Produktion", city="Stuttgart", addressLine1="A street 4", organizationName="My Company AG", region="Baden-Wuerttemberg", postalCode="70123", countryCode="DE")
-    billing = api.createContact("BillingFirst", "BillingLast", "+49-123-45678", "tobias_zatti@symantec.com", title="SSL account manager", city="Berlin", addressLine1="Test Ave 1", organizationName="my Company GmbH", region="Berlin", postalCode="13961", countryCode="DE")
-    contacts = {'admin':admin, 'tech':tech, 'billing':billing}
-
-    orginfo = api.createOrganizationInfo("My Company AG", countryCode = 'DE', region = 'BadenWuerttemberg', 
-         city = 'Stuttgart', addressLine1 = 'A street 20', postalCode = '70648', phone = '+49-123-45678', fax = '+49-123-123432')
-    
-    res = api.QuickOrder("RapidSSL", partnerOrderID = "blocktest", approverEmail = "hostmaster@zdlogistik.de", organizationInfo = orginfo,
-    contacts = contacts, options = {'CSR':csr, 'ValidityPeriod':12, 'WebServerType':'other', 'DVAuthMethod':"DNS"})
-
-    print res
-    exit()
-    """
-    
-    
-    #print api.ModifyOrder("CHANGEAUTH-RUNTIME-2", "UPDATE_DV_AUTH_METHOD", options={'DVAuthMethod':"EMAIL"})
-    #exit()
-    #print api.GetPreAuthOrdersByDateRange("2014-01-01T00:00:00", "2015-01-01T00:00:00")
-    #res = api.ValidatePreAuthenticationData("QuickSSLPremium", {'OrganizationInfo':orginfo})
-    #print res
-    #print api.GetOrderByPartnerOrderID("api_findbug", options={"ReturnCertificateInfo":True, "ReturnFulfillment":True})
-    #print api.client
-    
-    #api.ModifyOrder("RevocationTest", "DEACTIVATE")
-    #exit()
-    """
- #   print "Hello Response:", api.hello("Connection is running!")
- #   print api.client.wsdl['url']
-    #print api.CheckStatus("26_SAN_test")
-
-    ##############
-    # GET FULFILLMENT EXAMPLE
-    # Request with partner order id
-    #response =  api.GetFulfillment("26_SAN_test")
-    # This is how you access the actual certificate:
-    #print response.Fulfillment.ServerCertificate
-    # 
-    # ALTERNATIVELY you can use this shortcut:
-    # print api.GetFulfillment("26_SAN_test").Fulfillment.ServerCertificate
-    ##############
-
-    # GET MODIFIED ORDERS
-
-    #print api.GetModifiedOrders("2014-09-01T00:00:00", "2015-01-01T00:00:00")
-
-    # GET QUICK APPROVER LIST
-    # print api.GetQuickApproverList("testsite.com", productCode = "TrueBizIDEV")
-
-    # GET ORDERS BY DATE RANGE
-    #res = api.GetOrdersByDateRange("2014-01-01T00:00:00", "2015-01-01T00:00:00", options = {'ReturnContacts':True})
-
-    # GET USER AGREEMENT
-    #res = api.GetUserAgreement("QuickSSL")
-  
-
-#     # PARSE CSR
-#     #res = api.ParseCSR(csr)
-
-
-#    orginfo.JurisdictionCity = "Karlsruhe"
-#    orginfo.JurisdictionCountry = "DE"
-    orginfo.JurisdictionRegion = "BadenWuerttemberg"
-
-
-
-    """
-    csr = '-----BEGIN NEW CERTIFICATE REQUEST-----\
-    MIIDBTCCAe0CAQAwgb8xCzAJBgNVBAYTAkRFMSwwKgYDVQQIEyNCYWRlbi1XdWVy\
-    dHRlbWJlcmcscG9zdGFsQ29kZT03NjIyNzESMBAGA1UEBxMJS2FybHNydWhlMS8w\
-    LQYDVQQKEyZGaWR1Y2lhIElUIEFHLHN0cmVldD1GaWR1Y2lhc3RyYXNzZSAyMDET\
-    MBEGA1UECxMKUHJvZHVrdGlvbjEoMCYGA1UEAxMfZ2lyb3BheS5maW5hbnpwb3J0\
-    YWwuZmlkdWNpYS5kZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKu3\
-    aLLr76D8sHS+Co0vH5RfwqLWirxgGkopB5ZWmkTUHfuRXXwBiaMGqtd8V4wqACDk\
-    HeCOihTnZ99YBG5UII8IE0VSzybJ/RTjGzjL2CV7flcTqncRYo/KOH4uJ6IgXveC\
-    DBo7PNJNVGYZHPRs0J3YzdbMXAXtlRry25IDIHzs2O18To7oq/m3fwHU1QMZb7M2\
-    z26lnEwYqreU4UnBcbctB6VUs5NETJKSamrD1SeoUDEsao3Jc7Miwi/91kKat1+Z\
-    kCJtllVBdiLyersTmO3aejMSAMUUu8g5J/vn4QfdXn2XMevcpXWIwdrMK2hbXMoD\
-    OKjA9ABk/fXojDg+hU8CAwEAAaAAMA0GCSqGSIb3DQEBCwUAA4IBAQAzjuX57HXs\
-    4nJ+t/uUCj09Rf9fZ1xhTsBo3F6U2FN3+GfcYj2GYboZphlegFPUcnDO1hhnlGNb\
-    ve2rgKLiTaRrDZxTM/9dHskugPOTanlT+Es5kGJLzLzlD6S05qV2+Vj5wMPUJtls\
-    kmBwDhyJuhFDsGKTRRHiPSDDu7DFRPakzgaS431qkyX0S2LXnQLArTgpbYOztb6/\
-    xi/JrcSj/vfN1jCkhCM8PVhtNv8cPjOCfxiizHBhhaJqFJaSSdzfjsx4OUJHSXFm\
-    MbMv8PZ5tUUyfnmLlxpPm6DwwyuHV4NLL+DpZzNDg5iThUjoYyALWJeVtiv8rKKy\
-    By/n2IH0vfKd\
-    -----END NEW CERTIFICATE REQUEST-----'
-    #res = api.QuickOrder("RapidSSL", partnerOrderID = "RevocationTest2", approverEmail = "hostmaster@fiducia.de", organizationInfo = orginfo,
-    #contacts = contacts, options = {'CSR':csr, 'ValidityPeriod':12, 'WebServerType':'other'})
-
-    #print res
-    #exit()
-    
-    res = api.GetOrderByPartnerOrderID("RevocationTest2", {'ReturnCertificateInfo':True, 'ReturnFulfillment':True, 
-        'ReturnProductDetail':True, 'ReturnOrderAttributes':True})
-    #cert = res.OrderDetail.Fulfillment.ServerCertificate
-    #print api.GetOrderByPartnerOrderID("RevocationTest2")
-    #print api.Reissue("RevocationTest2", "tobias_zatti@symantec.com", options={'CSR':csr})
-
-    print res
-    #print api.Revoke(cert, "cessation of service")
-    # print res
-
-    # GET MODIFIED ORDERS
-
-    #print api.GetModifiedOrders("2015-01-29T00:00:00", "2015-02-01T00:00:00")
-
-    #res = api.QuickInvite("QuickSSLPremium", partnerOrderID = "pythontest_invite_01", requestorEmail = "hostmaster@tobiaszatti.com", organizationInfo = orginfo,
-    # contacts = contacts, options = {'CSR':csr, 'ValidityPeriod':12})
-    
-    #res = api.Reissue("pythontest_04", "max@mustermann.com", options={'CSR':csr})
-    #print res
-
-
-    #res = api.ModifyOrder("RevocationTest2", "APPROVE")
-    #print res
-    #print res
-    #exit()
-    #res = api.ChangeApproverEmail("pythontest_01", "hans@mustermann.com")
-    #print res
-
-    #res = api.ValidateOrderParameters("QuickSSLPremium", {'CSR':csr, 'ValidityPeriod':12, 'WebServerType':'iis'})
-    #print res
-
-    #res = api.ResendEmail("TrueBizID", "pythontest_04", "FulfillmentEmail")
-    #print res
-
-    # Cert fpr revocation
-
-    #cert = ''
-    #print api.client
-    #res = api.Revoke(cert, "key Compromise")
-    #print res
-
-#print api.ShowReplayTokens("4600590NOT94031")
-"""
